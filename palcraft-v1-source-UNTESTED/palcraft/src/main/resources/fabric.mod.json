@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "palcraft",
+  "version": "${version}",
+  "name": "Palcraft",
+  "description": "Catch Pal-style creatures in Minecraft with a craftable Pal Sphere.",
+  "authors": ["(your name)"],
+  "license": "(to be chosen by the creator)",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.palcraft.PalcraftMod"],
+    "client": ["com.palcraft.PalcraftClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

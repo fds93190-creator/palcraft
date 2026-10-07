@@ -1,0 +1,9 @@
+{
+  "_doc": "One row per Pal. Every cell must be filled. Colors are 0xRRGGBB integers. onHitEffect: none | ignite | minecraft:slowness | minecraft:poison | minecraft:weakness",
+  "rows": [
+    {"id":"lamball","name":"Lamball","maxHealth":14,"attackDamage":2,"speed":0.22,"width":0.6,"height":0.7,"modelScale":1.0,"catchDifficulty":0.0,"fireImmune":false,"onHitEffect":"none","onHitSeconds":0,"bodyColor":15658734,"accentColor":16757960,"eggPrimary":15658734,"eggSecondary":16757960},
+    {"id":"cattiva","name":"Cattiva","maxHealth":12,"attackDamage":3,"speed":0.28,"width":0.55,"height":0.65,"modelScale":0.95,"catchDifficulty":0.1,"fireImmune":false,"onHitEffect":"none","onHitSeconds":0,"bodyColor":15111750,"accentColor":16764006,"eggPrimary":15111750,"eggSecondary":16764006},
+    {"id":"foxparks","name":"Foxparks","maxHealth":14,"attackDamage":4,"speed":0.30,"width":0.6,"height":0.7,"modelScale":1.0,"catchDifficulty":0.3,"fireImmune":true,"onHitEffect":"ignite","onHitSeconds":3,"bodyColor":13785664,"accentColor":16766720,"eggPrimary":13785664,"eggSecondary":16766720},
+    {"id":"pengullet","name":"Pengullet","maxHealth":16,"attackDamage":3,"speed":0.25,"width":0.55,"height":0.8,"modelScale":1.0,"catchDifficulty":0.3,"fireImmune":false,"onHitEffect":"minecraft:slowness","onHitSeconds":3,"bodyColor":3958984,"accentColor":16777215,"eggPrimary":3958984,"eggSecondary":16777215}
+  ]
+}

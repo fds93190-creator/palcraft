@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""Preflight + generator. The sheets in ../sheets are the source of truth.
+
+  python3 tools/gen.py preflight   -> list unfilled cells, unresolved references, unverified hooks
+  python3 tools/gen.py generate    -> run preflight, then write GeneratedSheets.java, lang, recipe, item models
+Exit code 1 when preflight finds errors (unfilled or unresolved). 'Unverified' is reported but not an error.
+"""
+import json, os, sys
+
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+SUPPORTED_EFFECTS = {"none", "ignite", "minecraft:slowness", "minecraft:poison", "minecraft:weakness"}
+JAVA = os.path.join(ROOT, "src/main/java/com/palcraft")
+RES = os.path.join(ROOT, "src/main/resources")
+
+def load(name):
+    with open(os.path.join(ROOT, "sheets", name + ".json"), encoding="utf-8") as f:
+        return json.load(f)["rows"]
+
+def empty(v):
+    if v is None: return True
+    if isinstance(v, str) and v.strip() == "": return True
+    if isinstance(v, (list, dict)):
+        return len(v) == 0 or any(empty(x) for x in (v.values() if isinstance(v, dict) else v))
+    return False
+
+def preflight():
+    errors, unverified = [], []
+    sheets = {n: load(n) for n in ("pals", "items", "spawns", "hooks")}
+    # 1. every cell filled, and every row of a sheet has the same columns
+    for name, rows in sheets.items():
+        cols = set(rows[0].keys())
+        for i, row in enumerate(rows):
+            label = row.get("id") or row.get("palId") or str(i)
+            if set(row.keys()) != cols:
+                errors.append(f"{name}[{label}]: columns differ from first row: {sorted(set(row) ^ cols)}")
+            for k, v in row.items():
+                if empty(v): errors.append(f"{name}[{label}].{k}: unfilled")
+    pal_ids = {r["id"] for r in sheets["pals"]}
+    # 2. references between sheets
+    seen = set()
+    for r in sheets["spawns"]:
+        if r["palId"] not in pal_ids: errors.append(f"spawns[{r['palId']}]: palId not in pals.json")
+        if ":" not in str(r["biome"]): errors.append(f"spawns[{r['palId']}]: biome '{r['biome']}' has no namespace")
+        if (r["palId"], r["biome"]) in seen: errors.append(f"spawns: duplicate {r['palId']} / {r['biome']}")
+        seen.add((r["palId"], r["biome"]))
+        if not (1 <= r["min"] <= r["max"]): errors.append(f"spawns[{r['palId']}/{r['biome']}]: need 1 <= min <= max")
+    for pid in pal_ids:
+        if not any(r["palId"] == pid for r in sheets["spawns"]): errors.append(f"pals[{pid}]: has no spawn row, would never appear")
+    for r in sheets["pals"]:
+        if r["onHitEffect"] not in SUPPORTED_EFFECTS: errors.append(f"pals[{r['id']}].onHitEffect: '{r['onHitEffect']}' not implemented in PalEntity")
+        if r["onHitEffect"] != "none" and r["onHitSeconds"] <= 0: errors.append(f"pals[{r['id']}]: effect without seconds")
+        if not (0 <= r["catchDifficulty"] < 1): errors.append(f"pals[{r['id']}].catchDifficulty must be 0 <= x < 1")
+    for r in sheets["items"]:
+        used = {c for line in r["recipePattern"] for c in line if c != " "}
+        if used != set(r["recipeKey"]): errors.append(f"items[{r['id']}]: recipe pattern letters {sorted(used)} != key {sorted(r['recipeKey'])}")
+        for k, item in r["recipeKey"].items():
+            unverified.append(f"items[{r['id']}].recipeKey.{k} = {item}: vanilla item id not checked against the game")
+    for r in sheets["spawns"]:
+        unverified.append(f"spawns[{r['palId']}].biome = {r['biome']}: vanilla biome id not checked against the game")
+    # 3. hooks: Java file must exist, sheet must exist
+    for r in sheets["hooks"]:
+        if not os.path.exists(os.path.join(JAVA, r["javaFile"])): errors.append(f"hooks[{r['id']}]: {r['javaFile']} does not exist")
+        if not os.path.exists(os.path.join(ROOT, "sheets", r["sheet"])): errors.append(f"hooks[{r['id']}]: sheet {r['sheet']} does not exist")
+        if r["verified"] != "yes": unverified.append(f"hooks[{r['id']}] ({r['api']}): never run in the real game")
+    # 4. assets for every pal
+    for r in sheets["pals"]:
+        if not os.path.exists(os.path.join(RES, "assets/palcraft/textures/entity", r["id"] + ".png")):
+            errors.append(f"pals[{r['id']}]: texture {r['id']}.png missing")
+    if not os.path.exists(os.path.join(RES, "assets/palcraft/textures/item/pal_sphere.png")):
+        errors.append("items[pal_sphere]: texture pal_sphere.png missing")
+    return sheets, errors, unverified
+
+def report(errors, unverified):
+    print(f"ERRORS ({len(errors)}):"); [print("  -", e) for e in errors]
+    print(f"UNVERIFIED ({len(unverified)}):"); [print("  -", u) for u in unverified]
+
+def jstr(s): return json.dumps(s)
+
+def generate(sheets):
+    pals, items, spawns = sheets["pals"], sheets["items"], sheets["spawns"]
+    sphere = next(r for r in items if r["id"] == "pal_sphere")
+    f = lambda x: f"{x}f"
+    out = ["package com.palcraft;", "", "import java.util.List;", "import java.util.Map;", "",
+           "/** GENERATED by tools/gen.py from sheets/*.json. Do not edit; change the sheets. */",
+           "public final class GeneratedSheets {", "    private GeneratedSheets() {}", "",
+           "    public static final List<PalDef> PALS = List.of("]
+    rows = []
+    for p in pals:
+        rows.append(f'        new PalDef({jstr(p["id"])}, {jstr(p["name"])}, {f(p["maxHealth"])}, {f(p["attackDamage"])}, {p["speed"]}, '
+                    f'{f(p["width"])}, {f(p["height"])}, {f(p["modelScale"])}, {f(p["catchDifficulty"])}, {str(p["fireImmune"]).lower()}, '
+                    f'{jstr(p["onHitEffect"])}, {p["onHitSeconds"]}, {p["bodyColor"]}, {p["accentColor"]}, {p["eggPrimary"]}, {p["eggSecondary"]})')
+    out.append(",\n".join(rows)); out.append("    );"); out.append("")
+    out.append("    public static final Map<String, PalDef> PAL_BY_ID = Map.ofEntries(")
+    out.append(",\n".join(f'        Map.entry({jstr(p["id"])}, PALS.get({i}))' for i, p in enumerate(pals))); out.append("    );"); out.append("")
+    out.append("    public static final List<SpawnRow> SPAWNS = List.of(")
+    srows = []
+    for s in spawns:
+        ns, path = s["biome"].split(":", 1)
+        srows.append(f'        new SpawnRow({jstr(s["palId"])}, {jstr(ns)}, {jstr(path)}, {s["weight"]}, {s["min"]}, {s["max"]})')
+    out.append(",\n".join(srows)); out.append("    );"); out.append("")
+    out.append(f'    public static final int SPHERE_MAX_STACK = {sphere["maxStack"]};')
+    out.append(f'    public static final double SPHERE_BASE_CATCH = {sphere["baseCatchChance"]};')
+    out.append(f'    public static final float SPHERE_THROW_SPEED = {f(sphere["throwSpeed"])};')
+    out.append("}"); out.append("")
+    open(os.path.join(JAVA, "GeneratedSheets.java"), "w", encoding="utf-8").write("\n".join(out))
+
+    lang = {"item.palcraft.pal_sphere": sphere["name"]}
+    for p in pals:
+        lang[f"entity.palcraft.{p['id']}"] = p["name"]
+        lang[f"item.palcraft.{p['id']}_spawn_egg"] = p["name"] + " Spawn Egg"
+    lang["entity.palcraft.pal_sphere"] = sphere["name"]
+    json.dump(lang, open(os.path.join(RES, "assets/palcraft/lang/en_us.json"), "w", encoding="utf-8"), indent=2)
+
+    recipe = {"type": "minecraft:crafting_shaped", "category": "misc",
+              "key": {k: {"item": v} for k, v in sphere["recipeKey"].items()},
+              "pattern": sphere["recipePattern"], "result": {"id": "palcraft:pal_sphere", "count": sphere["recipeCount"]}}
+    json.dump(recipe, open(os.path.join(RES, "data/palcraft/recipe/pal_sphere.json"), "w"), indent=2)
+
+    models = os.path.join(RES, "assets/palcraft/models/item")
+    json.dump({"parent": "item/generated", "textures": {"layer0": "palcraft:item/pal_sphere"}}, open(os.path.join(models, "pal_sphere.json"), "w"), indent=2)
+    for p in pals:
+        json.dump({"parent": "minecraft:item/template_spawn_egg"}, open(os.path.join(models, f"{p['id']}_spawn_egg.json"), "w"), indent=2)
+
+if __name__ == "__main__":
+    mode = sys.argv[1] if len(sys.argv) > 1 else "preflight"
+    sheets, errors, unverified = preflight()
+    report(errors, unverified)
+    if errors:
+        print("\nPREFLIGHT NOT CLEAN: nothing generated."); sys.exit(1)
+    print("\nPREFLIGHT CLEAN (unverified items remain: they need the real game).")
+    if mode == "generate":
+        generate(sheets); print("Generated GeneratedSheets.java, lang, recipe, item models.")

@@ -1,0 +1,17 @@
+{
+  "_doc": "One row per (pal, biome). palId must exist in pals.json.",
+  "rows": [
+    {"palId":"lamball","biome":"minecraft:plains","weight":10,"min":2,"max":4},
+    {"palId":"lamball","biome":"minecraft:sunflower_plains","weight":10,"min":2,"max":4},
+    {"palId":"lamball","biome":"minecraft:meadow","weight":8,"min":2,"max":3},
+    {"palId":"cattiva","biome":"minecraft:forest","weight":8,"min":1,"max":3},
+    {"palId":"cattiva","biome":"minecraft:birch_forest","weight":8,"min":1,"max":3},
+    {"palId":"cattiva","biome":"minecraft:taiga","weight":6,"min":1,"max":2},
+    {"palId":"foxparks","biome":"minecraft:savanna","weight":8,"min":1,"max":2},
+    {"palId":"foxparks","biome":"minecraft:desert","weight":6,"min":1,"max":2},
+    {"palId":"foxparks","biome":"minecraft:badlands","weight":6,"min":1,"max":2},
+    {"palId":"pengullet","biome":"minecraft:snowy_plains","weight":8,"min":2,"max":3},
+    {"palId":"pengullet","biome":"minecraft:snowy_taiga","weight":6,"min":1,"max":3},
+    {"palId":"pengullet","biome":"minecraft:ice_spikes","weight":6,"min":1,"max":3}
+  ]
+}

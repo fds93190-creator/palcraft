@@ -1,0 +1,9 @@
+{
+  "_doc": "One row per craftable item. Spawn eggs are generated from pals.json.",
+  "rows": [
+    {"id":"pal_sphere","name":"Pal Sphere","maxStack":16,"baseCatchChance":0.5,"throwSpeed":1.5,
+     "recipeCount":4,
+     "recipePattern":[" I ","IRI"," I "],
+     "recipeKey":{"I":"minecraft:iron_ingot","R":"minecraft:redstone"}}
+  ]
+}

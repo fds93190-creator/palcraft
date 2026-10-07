@@ -1,0 +1,15 @@
+{
+  "_doc": "One row per hook into Minecraft/Fabric. javaFile must exist. verified stays 'no' until the hook has run in the real game.",
+  "rows": [
+    {"id":"entity_types","javaFile":"ModEntities.java","api":"Registry.register(ENTITY_TYPE)","sheet":"pals.json","verified":"no"},
+    {"id":"pal_attributes","javaFile":"ModEntities.java","api":"FabricDefaultAttributeRegistry","sheet":"pals.json","verified":"no"},
+    {"id":"biome_spawns","javaFile":"ModEntities.java","api":"BiomeModifications.addSpawn","sheet":"spawns.json","verified":"no"},
+    {"id":"spawn_rules","javaFile":"ModEntities.java","api":"SpawnRestriction.register","sheet":"pals.json","verified":"no"},
+    {"id":"items","javaFile":"ModItems.java","api":"Registry.register(ITEM)","sheet":"items.json","verified":"no"},
+    {"id":"sphere_throw","javaFile":"PalSphereItem.java","api":"Item.use","sheet":"items.json","verified":"no"},
+    {"id":"sphere_catch","javaFile":"PalSphereEntity.java","api":"ThrownItemEntity.onEntityHit","sheet":"items.json","verified":"no"},
+    {"id":"pal_ai","javaFile":"PalEntity.java","api":"TameableEntity goals","sheet":"pals.json","verified":"no"},
+    {"id":"pal_model","javaFile":"PalModel.java","api":"EntityModelLayerRegistry","sheet":"pals.json","verified":"no"},
+    {"id":"pal_renderer","javaFile":"PalcraftClient.java","api":"EntityRendererRegistry","sheet":"pals.json","verified":"no"}
+  ]
+}
