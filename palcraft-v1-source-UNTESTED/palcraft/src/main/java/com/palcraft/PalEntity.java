@@ -12,6 +12,7 @@ import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.world.World;
@@ -37,7 +38,7 @@ public class PalEntity extends TameableEntity {
     protected void initGoals() {
         goalSelector.add(1, new SwimGoal(this));
         goalSelector.add(2, new MeleeAttackGoal(this, 1.1, true));
-        goalSelector.add(3, new FollowOwnerGoal(this, 1.1, 8.0f, 2.0f, false));
+        goalSelector.add(3, new FollowOwnerGoal(this, 1.1, 8.0f, 2.0f));
         goalSelector.add(5, new WanderAroundFarGoal(this, 0.8));
         goalSelector.add(6, new LookAtEntityGoal(this, PlayerEntity.class, 8.0f));
         goalSelector.add(7, new LookAroundGoal(this));
@@ -61,6 +62,11 @@ public class PalEntity extends TameableEntity {
             }
         }
         return hit;
+    }
+
+    @Override
+    public boolean isBreedingItem(ItemStack stack) {
+        return false;
     }
 
     @Override
